@@ -15,6 +15,10 @@ head(hotels)
 dim(hotels)
 #Summary of the hotel data set
 summary(hotels)
+
+#Dropping the agent column
+#hotels <-hotels[ ,-c(24)]
+is.na(hotels$agent)
 #Missing value of hotel data set
 plot_missing(hotels)
 #There are 4 missing values in column children
@@ -80,7 +84,20 @@ library(psych)
 psych::describe(hotels)
 describeBy(hotels, hotels$hotel)
 
+#-------------------------------------Rough checking Initially ------------------------
+library(ResourceSelection)
+set.seed(1234)
 
+model <- glm(is_canceled ~ hotel + lead_time + arrival_date_month + children +
+                   market_segment + is_repeated_guest + adults + babies +
+                   previous_cancellations +
+                   deposit_type + booking_changes  +
+                   reserved_room_type + adr + days_in_waiting_list + customer_type +
+                   total_of_special_requests, 
+                 data = hotels , family = "binomial")
+summary(model)
+anova(model)
+hoslem.test(model$y, model$fitted)
 #---------------------DUMMY VARIABLES -----------------------------
 
 
@@ -169,8 +186,5 @@ extended_hotels$distribution_channel <- NULL
 str(extended_hotels)
 view(extended_hotels)
 glimpse(extended_hotels)
-
-r_code <- C(hotels$reserved_room_type, treatment)
-r_code
 
 
