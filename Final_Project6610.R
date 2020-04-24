@@ -81,7 +81,7 @@ psych::describe(hotels)
 describeBy(hotels, hotels$hotel)
 
 
-#---------------------DUMMY VARIABLES-----------------------------
+#---------------------DUMMY VARIABLES -----------------------------
 
 
 # Create the dummy variables for hotel
@@ -158,6 +158,7 @@ extended_hotels$deposit_type <- NULL
 extended_hotels$customer_type <- NULL
 extended_hotels$meal<-NULL
 extended_hotels$market_segment <- NULL
+extended_hotels$reserved_room_type <-NULL
 #We are deleting the company column as it have more than 1 lakhs missing value
 extended_hotels$company <-NULL
 extended_hotels$distribution_channel <- NULL
@@ -168,3 +169,8 @@ extended_hotels$distribution_channel <- NULL
 str(extended_hotels)
 view(extended_hotels)
 glimpse(extended_hotels)
+
+r_code <- C(hotels$reserved_room_type, treatment)
+r_code
+
+
