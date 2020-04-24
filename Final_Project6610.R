@@ -89,6 +89,3 @@ extended_hotels$company <-NULL
 str(extended_hotels)
 view(extended_hotels)
 glimpse(extended_hotels)
-
-
-
