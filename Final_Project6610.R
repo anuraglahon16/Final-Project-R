@@ -55,6 +55,19 @@ hotels$market_segment <- factor(hotels$market_segment)
 #Checking unique value in market_segment
 unique(hotels$market_segment)
 
+#Replacing Undefinded with mode but we can use backward and forward fill as this is a time series data
+#Function to calculate mode
+modeD <- getmode(hotels$distribution_channel)
+modeD
+#Replacing Undefined with mode
+hotels$distribution_channel <- replace(hotels$distribution_channel,hotels$distribution_channel=='Undefined',modeD)
+#We are droping the levels as we have replaced Undefined with mode
+hotels$distribution_channel <- factor(hotels$distribution_channel)
+#Checking unique value in market_segment
+unique(hotels$distribution_channel)
+
+
+
 
 
 
@@ -68,7 +81,7 @@ psych::describe(hotels)
 describeBy(hotels, hotels$hotel)
 
 
-#---------DUMMY VARIABLES------------
+#---------------------DUMMY VARIABLES-----------------------------
 
 
 # Create the dummy variables for hotel
@@ -117,13 +130,24 @@ extended_hotels <- cbind(meal_code, hotels)
 extended_hotels
 
 # Create the dummy variables for distribution_channel
-#distribution_code <- dummy.code(hotels$distribution_channel)
-#distribution_code
+distribution_code <- dummy.code(hotels$distribution_channel)
+distribution_code
 # Merge the dataset in an extended dataframe
-#extended_hotels <- cbind(distribution_code, hotels)
-#
+extended_hotels <- cbind(distribution_code, hotels)
+extended_hotels
+
+# Create the dummy variables for distribution_channel
+reserved_room_code <- dummy.code(hotels$reserved_room_type)
+reserved_room_code
+# Merge the dataset in an extended dataframe
+extended_hotels <- cbind(reserved_room_code, hotels)
+extended_hotels
 
 
+
+
+
+#-----------Droping Columns for those where we create Dummy Variable ----------
 
 
 # Drop the columns of the dataframe
@@ -139,9 +163,8 @@ extended_hotels$company <-NULL
 extended_hotels$distribution_channel <- NULL
 
 
+#----------Inspecting our Hotels Dataset where we create Dummy variable-----------------
+
 str(extended_hotels)
 view(extended_hotels)
 glimpse(extended_hotels)
-
-unique(hotels$distribution_channel)
-
