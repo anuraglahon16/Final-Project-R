@@ -7,6 +7,16 @@ library(funModeling)
 library(tidyverse)
 library(Hmisc)
 library(DataExplorer)
+#Load libraries
+library(dplyr)
+library(caret)
+library(lattice)
+
+library(magrittr)
+suppressPackageStartupMessages(library(tidyverse)) 
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(scales))
+suppressPackageStartupMessages(library(gridExtra)) 
 #reading data
 hotels <- read.csv('hotel_bookings.csv')
 #First 6 rows
@@ -83,6 +93,116 @@ plot_missing(hotels)
 library(psych)
 psych::describe(hotels)
 describeBy(hotels, hotels$hotel)
+#--------------------------------------------------EDA---------------------------------------------------#
+
+#Hotels
+ggplot(hotels,aes(x=factor(hotel))) +
+  geom_bar(col ="black",fill="#993333",alpha=0.5) +
+  theme(axis.text.x = element_text(face="bold", size=10)) +
+  scale_x_discrete("Hotel") +
+  scale_y_continuous("Count")
+
+
+# Number of arrival Date by Month
+d <- hotels %>% 
+  group_by(arrival_date_month) %>%
+  count() %>%
+  arrange(match(arrival_date_month,month.name))
+d <- data.frame(ArrivalDateMonth = d$arrival_date_month,N =d$n);
+d
+# Graph of Number of arrival Date by Month
+ggplot(hotels,aes(factor(arrival_date_month,levels=month.name))) +
+  geom_bar(col ="black",fill="#993333",alpha=0.5) +
+  theme(axis.text.x = element_text(face="bold", size=8, angle=30)) +
+  scale_y_continuous("Count",limits = c(0,15000),breaks=seq(0,15000,by=1500)) +
+  scale_x_discrete("Month")
+
+#NUmber of city hotel and Resort Hotel cancelled or not cancelled 
+ggplot(data = hotels,aes(factor(is_canceled)))+
+  geom_bar( col='black', fill="#993333", alpha = 0.5) +
+  facet_wrap(~hotel) +
+  scale_x_discrete("Canceled",labels = c("No","Yes")) +
+  scale_y_continuous("Count",limits = c(0,50000),breaks=seq(0,47222,by=5000))  +
+  theme(axis.text.x = element_text(face="bold", size=10))
+
+#Canceled and Lead time
+ggplot(data = hotels, aes(x = factor(is_canceled), y = lead_time  )) + 
+  geom_boxplot(col='black', fill="#993333", alpha = 0.5) +
+  theme(axis.text.x = element_text(face="bold", size=10)) +
+  scale_y_continuous("Lead Time",limits = c(0,800),breaks=seq(0,800,by=100)) +
+  scale_x_discrete("Canceled",labels = c("No","Yes"))
+
+#Year of arrival
+barplot(table(hotels$arrival_date_year), col='orange')
+
+
+#May and October have  the highest waiting times; these months represent the times right before and after peak reservation months (respectively)
+ggplot(hotels, aes(x=arrival_date_month, y=days_in_waiting_list, group=1)) + stat_summary(fun="mean", geom="line", col="navy") + 
+  ggtitle("Average Days on Waiting List by Arrival Month") + ylab("Waiting List: Average Days") + xlab("Month") +
+  theme(axis.text.x=element_text(angle=40))
+
+
+#The number of children included on reservations peaks in August, summer vacation season
+hotels %>% group_by(arrival_date_month) %>% summarize(MEANADULTS=mean(adults)) -> ADULTS
+hotels %>% group_by(arrival_date_month) %>% summarize(MEANCHILDREN=mean(children)) ->CHILDREN
+ADULTS<-data.frame(ADULTS)
+CHILDREN<-data.frame(CHILDREN)
+ADULTSCHILDREN<-merge(ADULTS, CHILDREN, by="arrival_date_month")
+
+ggplot(data=ADULTSCHILDREN) + 
+  geom_line(aes(y=MEANADULTS, x=arrival_date_month, group=1, col="Adults")) + 
+  geom_line(aes(y=MEANCHILDREN, x=arrival_date_month, group=1, col="Children")) +
+  ggtitle("Average Adults and Children Reserved for by Arrival Month") + xlab("Month") + ylab("Average Days") +
+  theme(axis.text.x=element_text(angle=40))
+
+#Online market segment's cancellation is more
+hotels%>% group_by(hotels$market_segment)  %>% summarise(length(is_canceled))
+
+#City Hotel Cancellation is more
+hotels %>% group_by(hotels$hotel)  %>% summarise(length(is_canceled))
+
+#Couples booking cancellation is more
+hotels %>% group_by(hotels$adults)  %>% summarise(length(is_canceled))
+
+#'A' type room cancellation is higher
+hotels %>% group_by(hotels$reserved_room_type)  %>% summarise(length(is_canceled))
+
+##---------Few time Series EDA-------------
+#Reservation status date by year
+ts<- hotels%>%group_by(reservation_status_date)%>%summarise(n=n())
+ts$reservation_status_date <- as.Date(timeS$reservation_status_date)
+ggplot(ts, aes(reservation_status_date, n)) + geom_line()
+
+#Time Series Analysis
+ggplot(timeS, aes(reservation_status_date, n)) + geom_line()
+
+ts <- timeS %>% filter(!is.na(n))
+ts
+# Frequency is set with 365 because it's daily
+components <- stl(ts(ts$n, frequency=365), 'periodic')
+# seasonal, trend, remainder
+plot(components)
+
+#It is a repeat may delete whichever is better
+hotels%>%group_by(arrival_date_month)%>%summarise(Count = n())%>%arrange(-Count)%>%ggplot(aes(x = arrival_date_month, y = Count)) +
+  geom_bar(stat = 'identity',fill = "dodgerblue") + coord_flip() + geom_text(aes(x =arrival_date_month, y=0.02, label= Count),
+                                                                             hjust=-1, vjust=0, size=4, 
+                                                                             colour="black", fontface="bold",
+                                                                             angle=360)
+# note this data use the booking confirmation and not the check ins, so this graph shows the
+# booking made for particular month and not the confirmed check ins.
+
+ggplot(hotels, aes(arrival_date_month, fill = factor(is_canceled))) +
+  geom_bar() + geom_text(stat = "count", aes(label = ..count..), hjust = 1) +
+  coord_flip() + scale_fill_discrete(
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    label = c("Cancelled", "Not Cancelled")
+  ) +
+  labs(title = "Booking Status by Month",
+       x = "Month",
+       y = "Count") + theme_bw()
+
 
 #-------------------------------------Rough checking Initially ------------------------
 library(ResourceSelection)
@@ -188,3 +308,4 @@ view(extended_hotels)
 glimpse(extended_hotels)
 
 
+#------Will also use this later , PCA to Reduce Dimension----------------------------
