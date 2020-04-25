@@ -1,5 +1,5 @@
 getwd()
-setwd("C:/Users/anami/Desktop/MS BA/Stats for BA/Group Project")
+setwd("C:/Users/anami/Desktop/MS BA/Stats for BA/Group Project/Final-Project-R")
 hotel=read.csv("hotel_bookings.csv")
 
  
@@ -32,3 +32,7 @@ barplot(table(hotel$arrival_date_year))
 barplot(table(hotel$arrival_date_month))
 plot_boxplot(hotel)
 
+
+#funmodeling
+df_status(hotel)
+cross_plot()
