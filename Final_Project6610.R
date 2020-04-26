@@ -213,6 +213,62 @@ ggplot(hotels, aes(arrival_date_month, fill = factor(is_canceled))) +
   labs(title = "Booking Status by Month",
        x = "Month",
        y = "Count") + theme_bw()
+#----------------------------------- Questions to Answer -------------------------------------------
+
+#Q1.Are the Guest with children need parking space then guest with no children?(Multivariate)
+
+hotel_stays <- hotels %>%
+  filter(is_canceled == 0) %>%
+  mutate(
+    children = case_when(
+      children + babies > 0 ~ "children",
+      TRUE ~ "none"
+    ),
+    required_car_parking_spaces = case_when(
+      required_car_parking_spaces > 0 ~ "parking",
+      TRUE ~ "none"
+    )
+  ) %>%
+  select(-is_canceled, -reservation_status, -babies)
+
+hotel_stays
+
+hotel_stays %>%
+  count(hotel, required_car_parking_spaces, children) %>%
+  group_by(hotel, children) %>%
+  mutate(proportion = n / sum(n)) %>%
+  ggplot(aes(required_car_parking_spaces, proportion, fill = children)) +
+  geom_col(position = "dodge") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  facet_wrap(~hotel, nrow = 2) +
+  labs(
+    x = NULL,
+    y = "Proportion of hotel stays",
+    fill = NULL
+  )
+
+# 2. WHich customer type pay more in  the hotels (this is for not cancelled one)?
+library(GGally)
+hotel_stays %>%
+  select(
+    hotel, adr,
+    customer_type,
+    total_of_special_requests
+  ) %>%
+  ggpairs(mapping = aes(color = customer_type))
+
+# 3.Which country the guest come from (for non cancelled)? Need to do some work not able to draw the map by plotly
+country <- hotels %>%
+                filter(is_canceled==0)%>%
+                count(country)
+                
+country
+
+
+
+
+
+
 #-------------------------------------Plotly Interactive Graphs---------------------------
 # Load the plotly package
 library(plotly)
