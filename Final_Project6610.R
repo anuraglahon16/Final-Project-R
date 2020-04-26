@@ -93,6 +93,17 @@ plot_missing(hotels)
 library(psych)
 psych::describe(hotels)
 describeBy(hotels, hotels$hotel)
+#--------------------checking our data after cleaning-----------------------------------------------
+
+#Good way to see the dataframe dividing categorical and qualntitve features
+
+library(skimr)
+
+skim(hotels)
+
+
+
+
 #--------------------------------------------------EDA---------------------------------------------------#
 
 #Hotels
@@ -202,6 +213,88 @@ ggplot(hotels, aes(arrival_date_month, fill = factor(is_canceled))) +
   labs(title = "Booking Status by Month",
        x = "Month",
        y = "Count") + theme_bw()
+#-------------------------------------Plotly Interactive Graphs---------------------------
+# Load the plotly package
+library(plotly)
+
+# Store the scatterplot of total_of_special_request vs.previous_bookings_not_canceled in 2016
+scatter <- hotels %>%
+  filter(arrival_date_year == '2016') %>%
+  ggplot(aes(x = total_of_special_requests, y = previous_bookings_not_canceled)) +
+  geom_point(alpha = 0.3)
+
+# Convert the scatterplot to a plotly graphic
+ggplotly(scatter)
+
+#Histogram of lead time
+# Create a histogram with bins of width 10 between 0 and 100
+hotels %>%
+  plot_ly(x = ~lead_time) %>%
+  add_histogram(xbins = list(start=0,end=100, size=10),color=I('#111e6c'))
+
+#Bar Plot for meal
+# Create a frequency for meal
+meal_table <- hotels %>%
+  count(meal)
+
+# Reorder the bars for meal by n
+meal_table %>%
+  mutate(meal = fct_reorder(meal, n, .desc = TRUE)) %>%
+  plot_ly(x = ~meal, y = ~n) %>% 
+  add_bars()  
+meal_table
+
+# Create a frequency for meal
+country_table <- hotels %>%
+  count(country)
+#Bar Plot for country
+country_table %>%
+  mutate(country = fct_reorder(country, n, .desc = TRUE)) %>%
+  plot_ly(x = ~country, y = ~n) %>% 
+  add_bars()  
+country_table
+
+# Create a scatter plot of days in waiting against lead time
+hotels %>%
+  plot_ly(x = ~days_in_waiting_list, y = ~lead_time) %>%
+  add_markers(marker= list(opacity=0.2))
+
+
+# Filter out the Reservation status and depodit type
+Dep_Reserv<- hotels%>%
+  filter(arrival_date_year == 2016 | arrival_date_year==2017 | arrival_date_year==2015)
+
+#Create a stacked bar chart of Reservation type by Deposit type
+Dep_Reserv %>%
+  count(deposit_type, reservation_status) %>%
+  plot_ly(x = ~deposit_type, y = ~n, color = ~reservation_status) %>%
+  add_bars() %>%
+  layout(barmode = "stack")
+
+# Made a table
+WaitingReserved<- hotels%>%
+  filter(arrival_date_year == 2016 | arrival_date_year==2017 | arrival_date_year==2015)
+
+# Create boxplots of days_in_waiting_list by reserved_room_type for above data
+WaitingReserved %>%
+  plot_ly(x = ~days_in_waiting_list, y =  ~reserved_room_type,hover_info='text',text=~paste("Days in waiting:",days_in_waiting_list,"Reserved room type:",reserved_room_type)) %>%
+  add_boxplot()
+
+# Use color to add is_cancelled as a third variable
+hotels%>%
+  plot_ly(x = ~days_in_waiting_list, y = ~previous_bookings_not_canceled, color = ~hotel) %>%
+  add_markers(colors = "Dark2",marker= list(opacity=0.2))
+
+# Polish the scatterplot by transforming the x-axis and labeling both axes
+hotels %>%
+  plot_ly(x = ~Global_Sales, y = ~Critic_Score) %>%
+  add_markers(marker = list(opacity = 0.5)) %>%
+  layout(xaxis = list(title = "Global sales (millions of units)", type = "log"),
+         yaxis = list(title = "Critic score"))
+
+
+
+
 
 
 #-------------------------------------Rough checking Initially ------------------------
