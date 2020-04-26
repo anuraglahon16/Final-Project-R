@@ -263,8 +263,10 @@ country <- hotels %>%
                 count(country)
                 
 country
+(
+# 4.Which are the busy months?
 
-
+# 5.
 
 
 
