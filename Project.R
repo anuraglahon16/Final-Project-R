@@ -98,7 +98,7 @@ hotels$reservation_status_date=as.integer(hotels$reservation_status_date)
 hotels$total_of_special_requests= as.factor(hotels$total_of_special_requests)
 hotels$is_repeated_guest=as.factor(hotels$is_repeated_guest)
 hotels$arrival_date_year=as.factor(hotels$arrival_date_year)
-hotels$is_canceled=as.factor(hotels$is_canceled)
+hotels$is_canceled=as.integer(hotels$is_canceled)
 
 #Removing country and column
 hotels=hotels[-24]
@@ -165,3 +165,6 @@ pred1=predict(m,testSet)
 1-sum(diag(tab1))/sum(tab1)
 
 
+#Model to predict booking cancellations
+ggplot(data = hotels,aes(is_canceled))+ geom_histogram(binwidth = 0.5, col='black', fill='blue',alpha=0.4) + facet_wrap(~hotel)
+ggplot(data=hotels,aes(lead_time))+ geom_histogram(binwidth = 0.5)+facet_wrap(~is_canceled)
