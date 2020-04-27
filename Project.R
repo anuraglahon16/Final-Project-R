@@ -87,6 +87,9 @@ plot_boxplot(hotels)
 
 
 ################################## Model Building #######################################
+############### Model to predict total requests from customers ##########################
+#1) using random forest package
+
 install.packages("randomForest")
 library(randomForest)
 sapply(hotels, class)
@@ -94,6 +97,8 @@ str(hotels)
 hotels$reservation_status_date=as.integer(hotels$reservation_status_date)
 hotels$total_of_special_requests= as.factor(hotels$total_of_special_requests)
 hotels$is_repeated_guest=as.factor(hotels$is_repeated_guest)
+hotels$arrival_date_year=as.factor(hotels$arrival_date_year)
+hotels$is_canceled=as.factor(hotels$is_canceled)
 
 #Removing country and column
 hotels=hotels[-24]
@@ -102,16 +107,16 @@ dim(hotels)
 
 #splitting dataset into training and testing data
 set.seed(0)
-train <- sample(nrow(hotels), 0.8*nrow(hotels), replace = FALSE)
-trainSet <- hotels[train,]
-testSet <- hotels[-train,]
+n=nrow(hotels)
+shuffled=hotels[sample(n),]
+trainSet=shuffled[1:round(0.8 * n),]
+testSet = shuffled[(round(0.8 * n) + 1):n,]
 summary(trainSet)
 summary(testSet)
 
-#using random forest package
-model=randomForest(total_of_special_requests ~ is_canceled + hotel + lead_time + stays_in_weekend_nights+stays_in_week_nights + market_segment + previous_cancellations+is_repeated_guest + adults + babies + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet, importance = TRUE)
+#model
+model=randomForest(total_of_special_requests ~.,data = trainSet, importance = TRUE)
 model
-
 #prediction and confusion matrix for training data
 install.packages("caret")
 install.packages("e1071")
@@ -122,22 +127,29 @@ confusionMatrix(p1,trainSet$total_of_special_requests)
 #prediction and confusion matrix for testing data
 p2=predict(model,testSet)
 confusionMatrix(p2,testSet$total_of_special_requests)
-#plot
+#Error rate
 plot(model)
 #tuning model
 tuneRF(trainSet[,-27],trainSet[,27],stepFactor = 0.5,plot=TRUE,ntreeTry = 200,trace=TRUE,improve = 0.05)
 #improved model
-rf=randomForest(total_of_special_requests ~ is_canceled + hotel + lead_time + stays_in_weekend_nights+stays_in_week_nights + market_segment + previous_cancellations+is_repeated_guest + adults + babies + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet,ntree=200,mtry=5,importance = TRUE,proximity=TRUE)
-rf
+#rf=randomForest(total_of_special_requests ~., data = trainSet,ntree=200,mtry=5,importance = TRUE,proximity=TRUE)
+#rf
+#number of nodes for the trees
+hist(treesize(model),main = "No of nodes for the trees",col = "green")
+#variable importance
+varImpPlot(model)
+varUsed(model)
 
-#Ordinal Logistic Regression
+
+#using Ordinal Logistic Regression
 install.packages("MASS")
 library(MASS)
 hotels$total_of_special_requests= as.ordered(hotels$total_of_special_requests)
 
-#model1
+#model
 m<- polr(total_of_special_requests ~ is_canceled + hotel + lead_time + stays_in_weekend_nights+stays_in_week_nights + market_segment + previous_cancellations+is_repeated_guest + adults + babies + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet, Hess = TRUE)
 summary(m)
+#m<- polr(total_of_special_requests ~.-adr, data = trainSet, Hess = TRUE)
 #p value
 (ctable <- coef(summary(m)))
 p=pnorm(abs(ctable[,"t value"]),lower.tail = FALSE)*2
@@ -152,7 +164,4 @@ pred1=predict(m,testSet)
 (tab1=table(pred1,testSet$total_of_special_requests))
 1-sum(diag(tab1))/sum(tab1)
 
-#model2
-m1<- polr(total_of_special_requests ~ is_canceled +hotel + lead_time + market_segment + is_repeated_guest + adults + babies + previous_cancellations + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet, Hess = TRUE)
-m1
 
