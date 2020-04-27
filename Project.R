@@ -98,7 +98,7 @@ hotels$reservation_status_date=as.integer(hotels$reservation_status_date)
 hotels$total_of_special_requests= as.factor(hotels$total_of_special_requests)
 hotels$is_repeated_guest=as.factor(hotels$is_repeated_guest)
 hotels$arrival_date_year=as.factor(hotels$arrival_date_year)
-hotels$is_canceled=as.integer(hotels$is_canceled)
+hotels$is_canceled=as.factor(hotels$is_canceled)
 
 #Removing country and column
 hotels=hotels[-24]
@@ -165,6 +165,24 @@ pred1=predict(m,testSet)
 1-sum(diag(tab1))/sum(tab1)
 
 
-#Model to predict booking cancellations
+##################### Model to predict booking cancellations #############################
+# 1) using random forest package
 ggplot(data = hotels,aes(is_canceled))+ geom_histogram(binwidth = 0.5, col='black', fill='blue',alpha=0.4) + facet_wrap(~hotel)
 ggplot(data=hotels,aes(lead_time))+ geom_histogram(binwidth = 0.5)+facet_wrap(~is_canceled)
+str(trainSet)
+
+model1=randomForest(is_canceled~., data=trainSet)
+model1
+#prediction and confusion matrix for training data
+modpredTrain=predict(model1,trainSet)
+confusionMatrix(modpredTrain,trainSet$is_canceled)
+#prediction and confusion matrix for testing data
+modpredTest=predict(model1,testSet)
+confusionMatrix(modpredTest,testSet$is_canceled)
+#Error rate
+plot(model1)
+#number of nodes for the trees
+hist(treesize(model1),main = "No of nodes for the trees",col = "green")
+#variable importance
+varImpPlot(model1)
+varUsed(model1)
