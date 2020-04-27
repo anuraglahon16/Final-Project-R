@@ -77,7 +77,7 @@ dim(hotels)
 #Univariate stats
 plot_num(hotels)         #plot histogram of all numeric data
 plot_histogram(hotels)
-plot_bar(hotels)         #barplot
+plot_bar(hotels)        
 plot_density(hotels)     #show density plot of all data
 plot_correlation(hotels)
 barplot(table(hotels$arrival_date_year))
