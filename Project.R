@@ -85,6 +85,31 @@ barplot(table(hotels$arrival_date_month))
 plot_boxplot(hotels)
 
 
+#Bivariate stats
+hotels$is_canceled=as.numeric(hotels$is_canceled)
+#cancellations for both the hotels
+ggplot(data = hotels,aes(is_canceled))+ geom_histogram(binwidth = 0.5, 
+            col='black', fill='blue',alpha=0.4) + facet_wrap(~hotel)
+
+#cancellation leadtime
+ggplot(data=hotels,aes(lead_time))+ geom_histogram(binwidth = 0.5)
++facet_wrap(~is_canceled)
+
+#stay duration for both the hotels
+ggplot(data=hotels, aes(stays_in_weekend_nights + stays_in_week_nights))
++geom_density(col="red")+facet_wrap(~hotel)+theme_bw()
+
+#Average daily rate for both hotels
+ggplot(data=hotels,aes(x=adr,fill=hotel,color=hotel))+geom_histogram(aes(y=..density..),
+      position = position_dodge(),binwidth=80)+geom_density(alpha=0.2)+
+  labs(title = "Average Daily rate by Hotel", x = "Hotel Price(in Euro)",y = "Count")+ 
+  scale_color_brewer(palette = "Paired") + theme_classic() + theme(legend.position = "top")
+
+#Hotel preference by customer type
+ggplot(data=hotels,aes(customer_type,fill=hotel)) +geom_bar(stat="count",position = position_dodge())
+
+
+
 
 ################################## Model Building #######################################
 ############### Model to predict total requests from customers ##########################
@@ -167,8 +192,6 @@ pred1=predict(m,testSet)
 
 ##################### Model to predict booking cancellations #############################
 # 1) using random forest package
-ggplot(data = hotels,aes(is_canceled))+ geom_histogram(binwidth = 0.5, col='black', fill='blue',alpha=0.4) + facet_wrap(~hotel)
-ggplot(data=hotels,aes(lead_time))+ geom_histogram(binwidth = 0.5)+facet_wrap(~is_canceled)
 str(trainSet)
 
 model1=randomForest(is_canceled~., data=trainSet)
