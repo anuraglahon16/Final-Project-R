@@ -181,13 +181,13 @@ hotels %>% group_by(hotels$reserved_room_type)  %>% summarise(length(is_canceled
 ##---------Few time Series EDA-------------
 #Reservation status date by year
 ts<- hotels%>%group_by(reservation_status_date)%>%summarise(n=n())
-ts$reservation_status_date <- as.Date(timeS$reservation_status_date)
+ts$reservation_status_date <- as.Date(ts$reservation_status_date)
 ggplot(ts, aes(reservation_status_date, n)) + geom_line()
 
 #Time Series Analysis
-ggplot(timeS, aes(reservation_status_date, n)) + geom_line()
+ggplot(ts, aes(reservation_status_date, n)) + geom_line()
 
-ts <- timeS %>% filter(!is.na(n))
+ts <- ts %>% filter(!is.na(n))
 ts
 # Frequency is set with 365 because it's daily
 components <- stl(ts(ts$n, frequency=365), 'periodic')
@@ -263,10 +263,12 @@ country <- hotels %>%
                 count(country)
                 
 country
-(
-# 4.Which are the busy months?
 
-# 5.
+# 4.Which are the busy months?(univariate)
+
+# 5.Which month have highest number of cancellation?(univariate)
+
+#
 
 
 
@@ -344,13 +346,12 @@ hotels%>%
   add_markers(colors = "Dark2",marker= list(opacity=0.2))
 
 # Polish the scatterplot by transforming the x-axis and labeling both axes
-hotels %>%
-  plot_ly(x = ~Global_Sales, y = ~Critic_Score) %>%
-  add_markers(marker = list(opacity = 0.5)) %>%
-  layout(xaxis = list(title = "Global sales (millions of units)", type = "log"),
-         yaxis = list(title = "Critic score"))
 
 
+hotels%>%
+  plot_ly(x = ~total_of_special_requests, y = ~adr) %>%
+  add_lines() %>%
+  layout(paper_bgcolor = "#ebebeb", xaxis = list(showgrid = FALSE))
 
 
 
@@ -369,6 +370,59 @@ model <- glm(is_canceled ~ hotel + lead_time + arrival_date_month + children +
 summary(model)
 anova(model)
 hoslem.test(model$y, model$fitted)
+# Compute the confidence intervals for model
+#confint(model)
+
+
+
+
+#---------------------------------------------Splitting the training and testing dataset ------------------------------------------------
+
+hotels=hotels[-24]
+hotels=hotels[-14]
+
+dim(hotels)
+
+
+#splitting dataset into training and testing data
+set.seed(0)
+n=nrow(hotels)
+shuffled=hotels[sample(n),]
+trainSet=shuffled[1:round(0.8 * n),]
+testSet = shuffled[(round(0.8 * n) + 1):n,]
+summary(trainSet)
+summary(testSet)
+
+# 95512 rows
+dim(trainSet)
+#23878 rows
+dim(testSet)
+
+model1 <- glm(is_canceled ~ hotel + lead_time + arrival_date_month + children +
+                 market_segment + is_repeated_guest + adults + babies +
+                 previous_cancellations +
+                 deposit_type + booking_changes  +
+                 reserved_room_type + adr + days_in_waiting_list + customer_type +
+                 total_of_special_requests, 
+               data = trainSet , family = "binomial")
+summary(model1)
+
+train_pred <-predict(model1, trainSet,type = 'response')
+library(knitr)
+library(ROCR)
+library(verification)
+pred <- prediction(train_pred,trainSet$is_canceled)
+perform <- performance(pred,"acc")
+max <- which.max(slot(perform,"y.values")[[1]])
+prob <- slot(perform,"x.values")[[1]][max]
+prob
+
+train_pred1 <- ifelse(train_pred >  prob, 1,0)
+mean(trainSet$is_canceled == train_pred1)
+
+tble <- table(Actual = trainSet$is_canceled,Predicted = train_pred1 );tble
+
+
 #---------------------DUMMY VARIABLES -----------------------------
 
 
@@ -400,7 +454,7 @@ reservation_status_code
 extended_hotels <- cbind(reservation_status_code, extended_hotels)
 extended_hotels
 
-unique(hotels$arrival_date_month)
+
 
 # Create the dummy variables for arrival_date_month
 arrivaldaymonth_status_code <- dummy.code(hotels$arrival_date_month)
@@ -414,27 +468,44 @@ meal_code <- dummy.code(hotels$meal)
 meal_code
 summary(hotels$meal)
 # Merge the dataset in an extended dataframe
-extended_hotels <- cbind(meal_code, hotels)
+extended_hotels <- cbind(meal_code, extended_hotels)
 extended_hotels
 
 # Create the dummy variables for distribution_channel
 distribution_code <- dummy.code(hotels$distribution_channel)
 distribution_code
 # Merge the dataset in an extended dataframe
-extended_hotels <- cbind(distribution_code, hotels)
+extended_hotels <- cbind(distribution_code, extended_hotels)
 extended_hotels
 
 # Create the dummy variables for distribution_channel
 reserved_room_code <- dummy.code(hotels$reserved_room_type)
 reserved_room_code
 # Merge the dataset in an extended dataframe
-extended_hotels <- cbind(reserved_room_code, hotels)
+extended_hotels <- cbind(reserved_room_code, extended_hotels)
 extended_hotels
-
-
-
-
-
+skim(extended_hotels)
+#------------------------------Dummy Variable for some purpose----------------------------
+hotel_code2 <- C(hotels$hotel, treatment)
+hotel_code2
+month_code2 <- C(hotels$arrival_date_month,treatment)
+month_code2
+meal_code2 <- C(hotels$meal,treatment)
+meal_code2
+market_sgement2 <- C(hotels$market_segment,treatment)
+market_sgement2
+distribution_code2<-C(hotels$distribution_channel)
+distribution_code2
+reserved_room_code2<-C(hotels$reserved_room_type,treatment)
+reserved_room_code2
+assigned_room_code2 <- C(hotels$assigned_room_type,treatment)
+assigned_room_code2
+deposit_type_code2 <- C(hotels$deposit_type,treatment)
+deposit_type_code2
+customer_type_code2 <- C(hotels$customer_type,treatment)
+customer_type_code2
+reservation_status_code2 <- C(hotels$reservation_status,treatment)
+reservation_status_code2
 #-----------Droping Columns for those where we create Dummy Variable ----------
 
 
@@ -457,6 +528,45 @@ extended_hotels$distribution_channel <- NULL
 str(extended_hotels)
 view(extended_hotels)
 glimpse(extended_hotels)
-
+#--------------
 
 #------Will also use this later , PCA to Reduce Dimension----------------------------
+
+
+
+#------------------------Running Model with dummy variable---------------------------------------------
+
+#splitting dataset into training and testing data
+set.seed(0)
+n=nrow(extended_hotels)
+shuffled=extended_hotels[sample(n),]
+trainSet1=shuffled[1:round(0.8 * n),]
+testSet1= shuffled[(round(0.8 * n) + 1):n,]
+summary(trainSet1)
+summary(testSet1)
+
+# 95512 rows
+dim(trainSet)
+#23878 rows
+dim(testSet)
+
+model2 <- glm(is_canceled ~ lead_time , 
+              data = trainSet1 , family = "binomial")
+summary(model2)
+
+train_pred <-predict(model2, trainSet,type = 'response')
+library(knitr)
+library(ROCR)
+library(verification)
+pred <- prediction(train_pred,trainSet$is_canceled)
+perform <- performance(pred,"acc")
+max <- which.max(slot(perform,"y.values")[[1]])
+prob <- slot(perform,"x.values")[[1]][max]
+prob
+
+train_pred1 <- ifelse(train_pred >  prob, 1,0)
+mean(trainSet$is_canceled == train_pred1)
+
+tble <- table(Actual = trainSet$is_canceled,Predicted = train_pred1 );tble
+
+
