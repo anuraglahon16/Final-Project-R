@@ -213,6 +213,7 @@ ggplot(hotels, aes(arrival_date_month, fill = factor(is_canceled))) +
   labs(title = "Booking Status by Month",
        x = "Month",
        y = "Count") + theme_bw()
+
 #----------------------------------- Questions to Answer -------------------------------------------
 
 #Q1.Are the Guest with children need parking space then guest with no children?(Multivariate)
@@ -230,6 +231,8 @@ hotel_stays <- hotels %>%
     )
   ) %>%
   select(-is_canceled, -reservation_status, -babies)
+
+
 
 hotel_stays
 
@@ -269,6 +272,7 @@ country
 # 5.Which month have highest number of cancellation?(univariate)
 
 #
+
 
 
 
@@ -377,12 +381,16 @@ hoslem.test(model$y, model$fitted)
 
 
 #---------------------------------------------Splitting the training and testing dataset ------------------------------------------------
-
+head(hotels)
+#drop company
 hotels=hotels[-24]
+#drop country
 hotels=hotels[-14]
+#drop reserve date
+hotels=hotels[-32]
 
 dim(hotels)
-
+skim(hotels)
 
 #splitting dataset into training and testing data
 set.seed(0)
@@ -397,6 +405,8 @@ summary(testSet)
 dim(trainSet)
 #23878 rows
 dim(testSet)
+
+#----------------------------------------------------Logistic Model 1 ------------------------------------------------------------------------
 
 model1 <- glm(is_canceled ~ hotel + lead_time + arrival_date_month + children +
                  market_segment + is_repeated_guest + adults + babies +
@@ -423,104 +433,90 @@ mean(trainSet$is_canceled == train_pred1)
 tble <- table(Actual = trainSet$is_canceled,Predicted = train_pred1 );tble
 
 
-#---------------------DUMMY VARIABLES -----------------------------
+test_pred <-predict(model1, testSet,type = 'response')
+
+test_pred1 <- ifelse(test_pred > prob , 1,0)
+mean(test$is_canceled == test_pred1)
+tble1 <- table(Actual = testSet$is_canceled,Predicted = test_pred1 );tble1
+
+TN <- tble1[1,1]
+FN <- tble1[2,1]
+FP <- tble1[1,2]
+TP <- tble1[2,2]
+N <- sum(tble[1,])
+P <- sum(tble[2,])
+Specificity <- FP/N
+Sensitivity <- TP/N
+df <- data.frame(Specificity,Sensitivity)
+kable(df)
+1 - sum(diag(tble1))/sum(tble1)
+roc.plot(
+  testSet$is_canceled,
+  test_pred,
+  threshold = seq(0,max(test_pred),0.01)
+)
+#83.52%
+pred1 <- prediction(test_pred,testSet$is_canceled)
+auc <- performance(pred1,"auc")
+auc <- unlist(slot(auc,"y.values"))
+auc
+
+#================================================Logistic Model 2==============================================================
+
+model2 <- glm(is_canceled ~ hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
+                market_segment + is_repeated_guest + adults + babies +
+                previous_cancellations +
+                deposit_type + booking_changes  +
+                reserved_room_type + adr + days_in_waiting_list + customer_type +
+                total_of_special_requests, 
+              data = trainSet , family = "binomial")
+summary(model2)
+
+train_pred2 <-predict(model2, trainSet,type = 'response')
+
+pred1 <- prediction(train_pred2,trainSet$is_canceled)
+perform2 <- performance(pred1,"acc")
+max1 <- which.max(slot(perform1,"y.values")[[1]])
+prob1 <- slot(perform1,"x.values")[[1]][max1]
+prob1
+
+train_pred2 <- ifelse(train_pred2 >  prob1, 1,0)
+mean(trainSet$is_canceled == train_pred2)
+
+tble2 <- table(Actual = trainSet$is_canceled,Predicted = train_pred2);tble2
 
 
-# Create the dummy variables for hotel
-hotel_code <- dummy.code(hotels$hotel)
-hotel_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(hotel_code, hotels)
-extended_hotels
+test_pred2 <-predict(model2, testSet,type = 'response')
 
-# Create the dummy variables for customer_type
-customer_code <- dummy.code(hotels$customer_type)
-customer_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(customer_code, extended_hotels)
-extended_hotels
+test_pred3 <- ifelse(test_pred2 > prob1 , 1,0)
+mean(test$is_canceled == test_pred3)
+tble11 <- table(Actual = testSet$is_canceled,Predicted = test_pred3 );tble11
 
-# Create the dummy variables for deposit_type
-deposit_code <- dummy.code(hotels$deposit_type)
-deposit_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(deposit_code, extended_hotels)
-extended_hotels
-
-# Create the dummy variables for reservation_status
-reservation_status_code <- dummy.code(hotels$reservation_status)
-reservation_status_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(reservation_status_code, extended_hotels)
-extended_hotels
-
-
-
-# Create the dummy variables for arrival_date_month
-arrivaldaymonth_status_code <- dummy.code(hotels$arrival_date_month)
-arrivaldaymonth_status_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(arrivaldaymonth_status_code, extended_hotels)
-extended_hotels
-
-# Create the dummy variables for meal
-meal_code <- dummy.code(hotels$meal)
-meal_code
-summary(hotels$meal)
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(meal_code, extended_hotels)
-extended_hotels
-
-# Create the dummy variables for distribution_channel
-distribution_code <- dummy.code(hotels$distribution_channel)
-distribution_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(distribution_code, extended_hotels)
-extended_hotels
-
-# Create the dummy variables for distribution_channel
-reserved_room_code <- dummy.code(hotels$reserved_room_type)
-reserved_room_code
-# Merge the dataset in an extended dataframe
-extended_hotels <- cbind(reserved_room_code, extended_hotels)
-extended_hotels
-skim(extended_hotels)
-#------------------------------Dummy Variable for some purpose----------------------------
-hotel_code2 <- C(hotels$hotel, treatment)
-hotel_code2
-month_code2 <- C(hotels$arrival_date_month,treatment)
-month_code2
-meal_code2 <- C(hotels$meal,treatment)
-meal_code2
-market_sgement2 <- C(hotels$market_segment,treatment)
-market_sgement2
-distribution_code2<-C(hotels$distribution_channel)
-distribution_code2
-reserved_room_code2<-C(hotels$reserved_room_type,treatment)
-reserved_room_code2
-assigned_room_code2 <- C(hotels$assigned_room_type,treatment)
-assigned_room_code2
-deposit_type_code2 <- C(hotels$deposit_type,treatment)
-deposit_type_code2
-customer_type_code2 <- C(hotels$customer_type,treatment)
-customer_type_code2
-reservation_status_code2 <- C(hotels$reservation_status,treatment)
-reservation_status_code2
-#-----------Droping Columns for those where we create Dummy Variable ----------
+TN <- tble11[1,1]
+FN <- tble11[2,1]
+FP <- tble11[1,2]
+TP <- tble11[2,2]
+N <- sum(tble2[1,])
+P <- sum(tble2[2,])
+Specificity <- FP/N
+Sensitivity <- TP/N
+df <- data.frame(Specificity,Sensitivity)
+kable(df)
+1 - sum(diag(tble11))/sum(tble11)
+roc.plot(
+  testSet$is_canceled,
+  test_pred,
+  threshold = seq(0,max(test_pred),0.01)
+)
+#83.61%
+pred2 <- prediction(test_pred2,testSet$is_canceled)
+auc <- performance(pred2,"auc")
+auc <- unlist(slot(auc,"y.values"))
+auc
+#=============================================Logistic Regression Model 3===================================================
 
 
-# Drop the columns of the dataframe
-extended_hotels$hotel <- NULL
-extended_hotels$arrival_date_month <- NULL
-extended_hotels$reservation_status <- NULL
-extended_hotels$deposit_type <- NULL
-extended_hotels$customer_type <- NULL
-extended_hotels$meal<-NULL
-extended_hotels$market_segment <- NULL
-extended_hotels$reserved_room_type <-NULL
-#We are deleting the company column as it have more than 1 lakhs missing value
-extended_hotels$company <-NULL
-extended_hotels$distribution_channel <- NULL
+
 
 
 #----------Inspecting our Hotels Dataset where we create Dummy variable-----------------
@@ -534,39 +530,18 @@ glimpse(extended_hotels)
 
 
 
-#------------------------Running Model with dummy variable---------------------------------------------
-
-#splitting dataset into training and testing data
-set.seed(0)
-n=nrow(extended_hotels)
-shuffled=extended_hotels[sample(n),]
-trainSet1=shuffled[1:round(0.8 * n),]
-testSet1= shuffled[(round(0.8 * n) + 1):n,]
-summary(trainSet1)
-summary(testSet1)
-
-# 95512 rows
-dim(trainSet)
-#23878 rows
-dim(testSet)
-
-model2 <- glm(is_canceled ~ lead_time , 
-              data = trainSet1 , family = "binomial")
-summary(model2)
-
-train_pred <-predict(model2, trainSet,type = 'response')
-library(knitr)
-library(ROCR)
-library(verification)
-pred <- prediction(train_pred,trainSet$is_canceled)
-perform <- performance(pred,"acc")
-max <- which.max(slot(perform,"y.values")[[1]])
-prob <- slot(perform,"x.values")[[1]][max]
-prob
-
-train_pred1 <- ifelse(train_pred >  prob, 1,0)
-mean(trainSet$is_canceled == train_pred1)
-
-tble <- table(Actual = trainSet$is_canceled,Predicted = train_pred1 );tble
+#------------------------Running Different Models---------------------------------------------
 
 
+#For ridge and lasso regression, we will be using the `glmnet` library.  
+#Remember, we need to tune our hyperparameter, $\lambda$ to find the 'best' ridge or lasso model to implement.  
+library(glmnet)
+x = model.matrix(hotels$is_canceled~., hotels)[,-1]
+y = hotels$is_canceled
+#Ridge regression
+#Then we would want to build in a cross-validation process to choose our 'best' $\lambda$.  We can do this using `cv.glmnet,` 
+cv_ridge = cv.glmnet(x, y, alpha = 0)
+#ridge regression is performed by default  using `alpha = 0`
+cv_ridge$lambda.min
+#We see that the cross-validated model with a $\lambda = 1.975$ provides the optimal model in terms of minimizing MSE
+predict(cv_ridge, type="coefficients", s=0.04829162)
