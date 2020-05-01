@@ -572,8 +572,7 @@ fit.nn <- train(is_canceled~. , data=trainSet, method="nnet",metric=metric, trCo
 
 require(neuralnet)
 m <- model.matrix( 
-  ~ is_canceled+hotel + lead_time + arrival_date_month + children +
-    market_segment + is_repeated_guest + adults + babies +
+  ~ is_canceled+hotel + lead_time + arrival_date_month + children  + is_repeated_guest + adults + babies +
     previous_cancellations +
     deposit_type + booking_changes  +
     reserved_room_type + adr + days_in_waiting_list + customer_type +
@@ -587,8 +586,20 @@ head(m)
 
 nn=neuralnet(is_canceled~lead_time,data=m, hidden=1,act.fct = "logistic",
              linear.output = FALSE)
+#==============================================KNN=================================================
 
-#----------Inspecting our Hotels Dataset where we create Dummy variable-----------------
+
+
+
+
+
+
+
+
+#======================================SVM==========================================================
+
+
+#----------Inspecting our Hotels Dataset where we create Dummy variable----------------------------
 
 str(extended_hotels)
 view(extended_hotels)
@@ -605,11 +616,13 @@ glimpse(extended_hotels)
 #For ridge and lasso regression, we will be using the `glmnet` library.  
 #Remember, we need to tune our hyperparameter, $\lambda$ to find the 'best' ridge or lasso model to implement.  
 library(glmnet)
-x = model.matrix(hotels$is_canceled~., hotels)[,-1]
-y = hotels$is_canceled
+x_train = model.matrix(trainSet$is_canceled~., trainSet)[,-1]
+y_train = trainSet$is_canceled
+x_test=model.matrix(testSet$is_canceled~., testSet)[,-1]
+y_test=testSet$is_canceled
 #Ridge regression
 #Then we would want to build in a cross-validation process to choose our 'best' $\lambda$.  We can do this using `cv.glmnet,` 
-cv_ridge = cv.glmnet(x, y, alpha = 0)
+cv_ridge = cv.glmnet(x_train, y_train, alpha = 0)
 #ridge regression is performed by default  using `alpha = 0`
 cv_ridge$lambda.min
 #We see that the cross-validated model with a $\lambda = 0.048 provides the optimal model in terms of minimizing MSE
@@ -630,4 +643,8 @@ cv_en = cv.glmnet(x, y, alpha = 0.5)
 bestlam = cv_en$lambda.min
 predict(cv_en, type="coefficients", s=bestlam)
 
+#=======================================Ridge Regression by other method=======================================
+alpha0.fit <- cv.glmnet(x_train,y_train,type.measure = 'mse',alpha=0,family='gaussian')
+alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test)
+mean((y_test-alpha0.predicted)^2)
 
