@@ -386,8 +386,7 @@ head(hotels)
 hotels=hotels[-24]
 #drop country
 hotels=hotels[-14]
-#drop reserve date
-hotels=hotels[-32]
+hotels$reservation_status_date <- NULL
 
 dim(hotels)
 skim(hotels)
@@ -436,7 +435,7 @@ tble <- table(Actual = trainSet$is_canceled,Predicted = train_pred1 );tble
 test_pred <-predict(model1, testSet,type = 'response')
 
 test_pred1 <- ifelse(test_pred > prob , 1,0)
-mean(test$is_canceled == test_pred1)
+mean(testSet$is_canceled == test_pred1)
 tble1 <- table(Actual = testSet$is_canceled,Predicted = test_pred1 );tble1
 
 TN <- tble1[1,1]
@@ -514,10 +513,80 @@ auc <- performance(pred2,"auc")
 auc <- unlist(slot(auc,"y.values"))
 auc
 #=============================================Logistic Regression Model 3===================================================
+model3 <- glm(is_canceled ~ + lead_time + arrival_date_month +arrival_date_year+children +meal+
+                market_segment + is_repeated_guest + adults + babies + distribution_channel+
+                previous_cancellations +
+                deposit_type  +
+                reserved_room_type + adr + days_in_waiting_list + customer_type, 
+              data = trainSet , family = "binomial")
+summary(model3)
+
+train_pred2 <-predict(model3, trainSet,type = 'response')
+
+pred1 <- prediction(train_pred2,trainSet$is_canceled)
+perform2 <- performance(pred1,"acc")
+max1 <- which.max(slot(perform1,"y.values")[[1]])
+prob1 <- slot(perform1,"x.values")[[1]][max1]
+prob1
+
+train_pred2 <- ifelse(train_pred2 >  prob1, 1,0)
+mean(trainSet$is_canceled == train_pred2)
+
+tble2 <- table(Actual = trainSet$is_canceled,Predicted = train_pred2);tble2
+
+
+test_pred2 <-predict(model2, testSet,type = 'response')
+
+test_pred3 <- ifelse(test_pred2 > prob1 , 1,0)
+mean(test$is_canceled == test_pred3)
+tble11 <- table(Actual = testSet$is_canceled,Predicted = test_pred3 );tble11
+
+TN <- tble11[1,1]
+FN <- tble11[2,1]
+FP <- tble11[1,2]
+TP <- tble11[2,2]
+N <- sum(tble2[1,])
+P <- sum(tble2[2,])
+Specificity <- FP/N
+Sensitivity <- TP/N
+df <- data.frame(Specificity,Sensitivity)
+kable(df)
+1 - sum(diag(tble11))/sum(tble11)
+roc.plot(
+  testSet$is_canceled,
+  test_pred,
+  threshold = seq(0,max(test_pred),0.01)
+)
+#81.27%
+pred2 <- prediction(test_pred2,testSet$is_canceled)
+auc <- performance(pred2,"auc")
+auc <- unlist(slot(auc,"y.values"))
+auc
 
 
 
+#============================================Neural Network ============================================================
+library(caret)
+set.seed(0)
+fit.nn <- train(is_canceled~. , data=trainSet, method="nnet",metric=metric, trControl=control)
 
+require(neuralnet)
+m <- model.matrix( 
+  ~ is_canceled+hotel + lead_time + arrival_date_month + children +
+    market_segment + is_repeated_guest + adults + babies +
+    previous_cancellations +
+    deposit_type + booking_changes  +
+    reserved_room_type + adr + days_in_waiting_list + customer_type +
+    total_of_special_requests,data=hotels
+)
+head(m)
+
+
+# fit neural network
+
+
+nn=neuralnet(is_canceled~lead_time,data=m, hidden=1,act.fct = "logistic",
+             linear.output = FALSE)
 
 #----------Inspecting our Hotels Dataset where we create Dummy variable-----------------
 
@@ -543,5 +612,22 @@ y = hotels$is_canceled
 cv_ridge = cv.glmnet(x, y, alpha = 0)
 #ridge regression is performed by default  using `alpha = 0`
 cv_ridge$lambda.min
-#We see that the cross-validated model with a $\lambda = 1.975$ provides the optimal model in terms of minimizing MSE
+#We see that the cross-validated model with a $\lambda = 0.048 provides the optimal model in terms of minimizing MSE
 predict(cv_ridge, type="coefficients", s=0.04829162)
+
+#Lasso
+cv_lasso = cv.glmnet(x, y, alpha = 1)
+bestlam = cv_ridge$lambda.min
+predict(cv_lasso, type="coefficients", s=bestlam)
+
+#Here we can see the optimal LASSO solution dropped both Murder and Assault to only 
+#keep one of the variables.  Remember, ridge will not drop coefficients - that it is, 
+#it doesn't perform dimensionality reduction.  Alternatively, LASSO is happy to drop coefficients, 
+#especially with larger values of $\lambda$.
+
+#elastic net
+cv_en = cv.glmnet(x, y, alpha = 0.5)
+bestlam = cv_en$lambda.min
+predict(cv_en, type="coefficients", s=bestlam)
+
+
