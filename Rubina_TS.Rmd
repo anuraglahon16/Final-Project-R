@@ -1,0 +1,127 @@
+---
+title: "RubinaTS"
+output: html_document
+---
+
+
+```{r}
+hotelData=read.csv('hotel_bookings.csv')
+head(hData)
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(pROC))
+```
+
+
+#Filter Hotel Data with reservation status and date
+```{r}
+hdd =  hotelData %>% 
+  filter(reservation_status=='Check-Out') %>%
+  group_by(reservation_status_date)%>%
+  summarise(n=n())
+
+hdd$reservation_status_date = as.Date(hdd$reservation_status_date)
+
+library(lubridate)
+
+hd = hdd %>% group_by(reservation_status_month=floor_date(reservation_status_date, "month")) %>%
+  summarise(n=sum(n))
+
+
+ggplot(hd, aes(reservation_status_month, n)) + geom_line()
+
+```  
+
+#Create TimeSeries for seasonal data
+#hs = hotel data seasonal
+```{r}
+
+hs = ts(hd$n, start=c(2015, 7), end=c(2017,7), frequency= 12)
+
+```
+#Test for stationary time series
+```{r}
+
+library(tseries)
+adf.test(hs) # p-value < 0.05 indicates the TS is stationary
+kpss.test(hs)
+
+```
+#See the components of time series
+```{r}
+
+components = stl(hs, 'periodic')
+plot(components)
+
+```
+
+#Decompose seasonality
+```{r}
+
+library(forecast)
+seasonplot(hs)
+
+dcomp = decompose(hs)
+dcomp$seasonal
+
+
+```
+
+#Plot to see seasonality
+```{r}
+
+plot(forecast(auto.arima(hs)), sub = "Simple plot to forecast")
+
+```
+#Forecasts
+
+```{r}
+hsforecasts = HoltWinters(hs)
+hsforecasts
+hsforecasts$fitted
+plot(hsforecasts)
+library("forecast")
+forecast(hsforecasts, h=8)
+
+```
+forecast(auto.arima(hsforecasts))
+
+```{r}
+
+library(forecast)
+fit <- ets(hs)
+fc <- forecast(fit)
+plot(fc)
+fc
+
+```
+> accuracy(fc)
+                   ME    RMSE      MAE      MPE     MAPE      MASE      ACF1
+Training set 80.61895 510.038 404.3835 1.557431 15.49543 0.7967545 0.1774337
+
+
+fit_arima <- Arima(hs, order=c(1,1,0), seasonal=list(order=c(1,0,0), period=12))
+> accuracy( fit_arima)
+                   ME    RMSE      MAE      MPE    MAPE      MASE        ACF1
+Training set 22.61754 122.097 101.6285 1.627262 22.3616 0.3061808 -0.05615262
+
+
+hd = hdd %>% group_by(reservation_status_month=floor_date(reservation_status_date, "month")) %>%
+  summarise(n=sum(n))
+  
+  
+=================
+
+#Daily forecast
+
+```{r}
+msts = msts(hdd$n, seasonal.periods = c(7,365.25),start =decimal_date(as.Date("2015-07-01")))
+plot(msts, main="Daily Admissions", xlab="Year", ylab="Daily Admissions")
+
+tbats = tbats(msts)
+plot(tbats, main="Multiple Season Decomposition")
+
+sp = predict(tbats,h=14)
+plot(sp, main = "TBATS Forecast", include=14)
+
+```
