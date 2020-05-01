@@ -82,7 +82,17 @@ plot_density(hotels)     #show density plot of all data
 plot_correlation(hotels)
 barplot(table(hotels$arrival_date_year))
 barplot(table(hotels$arrival_date_month))
-plot_boxplot(hotels)
+
+#outliers
+boxplot(hotels$lead_time)                    #outliers
+boxplot(hotels$stays_in_weekend_nights)
+boxplot(hotels$stays_in_week_nights)
+boxplot(hotels$adults)
+boxplot(hotels$previous_cancellations)
+boxplot(hotels$previous_bookings_not_canceled)  #outliers
+boxplot(hotels$booking_changes)
+boxplot(hotels$days_in_waiting_list)
+boxplot(hotels$adr)                            #outliers
 
 
 #Bivariate stats
@@ -155,10 +165,15 @@ confusionMatrix(p2,testSet$total_of_special_requests)
 #Error rate
 plot(model)
 #tuning model
-tuneRF(trainSet[,-27],trainSet[,27],stepFactor = 0.5,plot=TRUE,ntreeTry = 200,trace=TRUE,improve = 0.05)
+tuneRF(trainSet[,-27],trainSet[,27],stepFactor = 0.5,plot=TRUE,ntreeTry = 300,trace=TRUE,improve = 0.05)
 #improved model
-#rf=randomForest(total_of_special_requests ~., data = trainSet,ntree=200,mtry=5,importance = TRUE,proximity=TRUE)
-#rf
+rf=randomForest(total_of_special_requests ~., data = trainSet,ntree=300,mtry=10,importance = TRUE)
+rf
+p3=predict(rf,trainSet)
+confusionMatrix(p3,trainSet$total_of_special_requests)
+#prediction and confusion matrix for testing data
+p4=predict(rf,testSet)
+confusionMatrix(p4,testSet$total_of_special_requests)
 #number of nodes for the trees
 hist(treesize(model),main = "No of nodes for the trees",col = "green")
 #variable importance
@@ -166,13 +181,15 @@ varImpPlot(model)
 varUsed(model)
 
 
-#using Ordinal Logistic Regression
+# 2)using Ordinal Logistic Regression
 install.packages("MASS")
 library(MASS)
 hotels$total_of_special_requests= as.ordered(hotels$total_of_special_requests)
+str(hotels)
+summary(hotels)
 
 #model
-m<- polr(total_of_special_requests ~ is_canceled + hotel + lead_time + stays_in_weekend_nights+stays_in_week_nights + market_segment + previous_cancellations+is_repeated_guest + adults + babies + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet, Hess = TRUE)
+m<- polr(total_of_special_requests ~ is_canceled + lead_time + stays_in_weekend_nights+stays_in_week_nights +is_repeated_guest + adults + babies + days_in_waiting_list +market_segment+ deposit_type+ customer_type, data = trainSet, Hess = TRUE)
 summary(m)
 #m<- polr(total_of_special_requests ~.-adr, data = trainSet, Hess = TRUE)
 #p value
@@ -188,6 +205,46 @@ pred=predict(m,trainSet)
 pred1=predict(m,testSet)
 (tab1=table(pred1,testSet$total_of_special_requests))
 1-sum(diag(tab1))/sum(tab1)
+# Check assumptions
+install.packages("car")
+library(car)
+hotels$total_of_special_requests= as.numeric(hotels$total_of_special_requests)
+vif(lm(total_of_special_requests ~ is_canceled + hotel + lead_time + stays_in_weekend_nights+stays_in_week_nights + previous_cancellations+is_repeated_guest + adults + babies + deposit_type + booking_changes + days_in_waiting_list + customer_type, data = trainSet))
+install.packages("brant")
+library(brant)
+brant(m)
+propOddsTest(m)
+
+
+#3) Using logistic regression
+hotels$total_of_special_requests=as.numeric(hotels$total_of_special_requests)
+for (i in 1:118902) {
+  if (hotels$total_of_special_requests[i]>1){
+    hotels$total_of_special_requests[i]=(hotels$total_of_special_requests[i]= 1)
+  }
+}
+hotels$total_of_special_requests= as.factor(hotels$total_of_special_requests)
+hotels$total_of_special_requests
+mod<- glm(total_of_special_requests ~ is_canceled + lead_time + stays_in_weekend_nights+stays_in_week_nights +is_repeated_guest + adults + babies + days_in_waiting_list +market_segment+ deposit_type+ customer_type, data = trainSet, family='binomial')
+summary(mod)
+exp(mod$coefficients)
+#cross validation
+install.packages("boot")
+library(boot)
+set.seed(0) 
+cv_results=cv.glm(na.omit(trainSet), mod, K=10)
+cv_results$delta
+#Pridiction and confusion matrix for training data
+prediction=predict(mod,trainSet, type='response')
+prediction1= ifelse(prediction>0.5,1,0)
+tab1= table(prediction1,trainSet$total_of_special_requests)
+1-sum(diag(tab1))/sum(tab1)
+#Pridiction and confusion matrix for test data
+prediction2=predict(mod,testSet, type='response')
+prediction3= ifelse(prediction2>0.5,1,0)
+tab2= table(prediction3,testSet$total_of_special_requests)
+1-sum(diag(tab2))/sum(tab2)
+
 
 
 ##################### Model to predict booking cancellations #############################
@@ -209,3 +266,8 @@ hist(treesize(model1),main = "No of nodes for the trees",col = "green")
 #variable importance
 varImpPlot(model1)
 varUsed(model1)
+# Cross validation
+#Model1_CV =train(is_canceled~.,data=hotels, method="rf",trControl=trainControl(method="cv",number=10))
+library(caret)
+Model1_CV= train(is_canceled~., method = "rf", data = hotels, trControl = trainControl(method = "LOOCV"))
+Model1_CV
