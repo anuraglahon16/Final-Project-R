@@ -725,3 +725,29 @@ alpha1.fit <- cv.glmnet(x_train3,y_train3,type.measure = 'mse',alpha=1,family='g
 alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test3)
 mean((y_test3-alpha1.predicted)^2)
 
+
+#=================================Regression for all the varible except some that are not essential==========================
+x_train4 = model.matrix(trainSet$is_canceled~hotel + lead_time + arrival_date_year+arrival_date_week_number+
+                          arrival_date_day_of_month + stays_in_weekend_nights+adults+children+babies+is_repeated_guest+
+                          previous_cancellations + previous_bookings_not_canceled+booking_changes+days_in_waiting_list+
+                          adr+required_car_parking_spaces+total_of_special_requests+
+                          arrival_date_month+meal+market_segment+distribution_channel+reserved_room_type+
+                          assigned_room_type+deposit_type+customer_type, trainSet)[,-1]
+y_train4 = trainSet$is_canceled
+x_test4=model.matrix(testSet$is_canceled~hotel + lead_time + arrival_date_year+arrival_date_week_number+
+                       arrival_date_day_of_month + stays_in_weekend_nights+adults+children+babies+is_repeated_guest+
+                       previous_cancellations + previous_bookings_not_canceled+booking_changes+days_in_waiting_list+
+                       adr+required_car_parking_spaces+total_of_special_requests+
+                       arrival_date_month+meal+market_segment+distribution_channel+reserved_room_type+
+                       assigned_room_type+deposit_type+customer_type, testSet)[,-1]
+y_test4=testSet$is_canceled
+
+#=======================================Ridge Regression for cancelled hotel=======================================
+alpha0.fit <- cv.glmnet(x_train4,y_train4,type.measure = 'mse',alpha=0,family='gaussian')
+alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test4)
+mean((y_test4-alpha0.predicted)^2)
+#=======================================Lasso Regression for cancelled hotel=======================================
+alpha1.fit <- cv.glmnet(x_train4,y_train4,type.measure = 'mse',alpha=1,family='gaussian')
+alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test4)
+mean((y_test4-alpha1.predicted)^2)
+
