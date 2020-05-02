@@ -513,7 +513,7 @@ auc <- performance(pred2,"auc")
 auc <- unlist(slot(auc,"y.values"))
 auc
 #=============================================Logistic Regression Model 3===================================================
-model3 <- glm(is_canceled ~ + lead_time + arrival_date_month +arrival_date_year+children +meal+
+model3 <- glm(is_canceled ~ lead_time + arrival_date_month +arrival_date_year+children +meal+
                 market_segment + is_repeated_guest + adults + babies + distribution_channel+
                 previous_cancellations +
                 deposit_type  +
@@ -643,8 +643,85 @@ cv_en = cv.glmnet(x, y, alpha = 0.5)
 bestlam = cv_en$lambda.min
 predict(cv_en, type="coefficients", s=bestlam)
 
-#=======================================Ridge Regression by other method=======================================
+#=======================================Ridge Regression for cancelled hotel=======================================
 alpha0.fit <- cv.glmnet(x_train,y_train,type.measure = 'mse',alpha=0,family='gaussian')
 alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test)
 mean((y_test-alpha0.predicted)^2)
+#=======================================Lasso Regression for cancelled hotel=======================================
+alpha1.fit <- cv.glmnet(x_train,y_train,type.measure = 'mse',alpha=1,family='gaussian')
+alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test)
+mean((y_test-alpha1.predicted)^2)
+#=========================================Regression for some variable with Logistic Regression 83.61=============================================
+x_train1 = model.matrix(trainSet$is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
+                          market_segment + is_repeated_guest + adults + babies +
+                          previous_cancellations +
+                          deposit_type + booking_changes  +
+                          reserved_room_type + adr + days_in_waiting_list + customer_type +
+                          total_of_special_requests, trainSet)[,-1]
+y_train1 = trainSet$is_canceled
+x_test1=model.matrix(testSet$is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
+                       market_segment + is_repeated_guest + adults + babies +
+                       previous_cancellations +
+                       deposit_type + booking_changes  +
+                       reserved_room_type + adr + days_in_waiting_list + customer_type +
+                       total_of_special_requests, testSet)[,-1]
+y_test1=testSet$is_canceled
+
+#=======================================Ridge Regression for cancelled hotel=======================================
+alpha0.fit <- cv.glmnet(x_train1,y_train1,type.measure = 'mse',alpha=0,family='gaussian')
+alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test1)
+mean((y_test1-alpha0.predicted)^2)
+#=======================================Lasso Regression for cancelled hotel=======================================
+alpha1.fit <- cv.glmnet(x_train1,y_train1,type.measure = 'mse',alpha=1,family='gaussian')
+alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test1)
+mean((y_test1-alpha1.predicted)^2)
+
+#=========================================Regression for some variable with Logistic Regression 81.0=============================================
+x_train2 = model.matrix(trainSet$is_canceled~lead_time + arrival_date_month +arrival_date_year+children +meal+
+                          market_segment + is_repeated_guest + adults + babies + distribution_channel+
+                          previous_cancellations +
+                          deposit_type  +
+                          reserved_room_type + adr + days_in_waiting_list + customer_type, trainSet)[,-1]
+y_train2 = trainSet$is_canceled
+x_test2=model.matrix(testSet$is_canceled~lead_time + arrival_date_month +arrival_date_year+children +meal+
+                       market_segment + is_repeated_guest + adults + babies + distribution_channel+
+                       previous_cancellations +
+                       deposit_type  +
+                       reserved_room_type + adr + days_in_waiting_list + customer_type, testSet)[,-1]
+y_test2=testSet$is_canceled
+
+#=======================================Ridge Regression for cancelled hotel=======================================
+alpha0.fit <- cv.glmnet(x_train2,y_train2,type.measure = 'mse',alpha=0,family='gaussian')
+alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test2)
+mean((y_test2-alpha0.predicted)^2)
+#=======================================Lasso Regression for cancelled hotel=======================================
+alpha1.fit <- cv.glmnet(x_train2,y_train2,type.measure = 'mse',alpha=1,family='gaussian')
+alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test2)
+mean((y_test2-alpha1.predicted)^2)
+
+
+#=========================================Regression for some variable with Logistic Regression 83.5=============================================
+x_train3 = model.matrix(trainSet$is_canceled~hotel + lead_time + arrival_date_month + children +
+                          market_segment + is_repeated_guest + adults + babies +
+                          previous_cancellations +
+                          deposit_type + booking_changes  +
+                          reserved_room_type + adr + days_in_waiting_list + customer_type +
+                          total_of_special_requests, trainSet)[,-1]
+y_train3 = trainSet$is_canceled
+x_test3=model.matrix(testSet$is_canceled~hotel + lead_time + arrival_date_month + children +
+                       market_segment + is_repeated_guest + adults + babies +
+                       previous_cancellations +
+                       deposit_type + booking_changes  +
+                       reserved_room_type + adr + days_in_waiting_list + customer_type +
+                       total_of_special_requests, testSet)[,-1]
+y_test3=testSet$is_canceled
+
+#=======================================Ridge Regression for cancelled hotel=======================================
+alpha0.fit <- cv.glmnet(x_train3,y_train3,type.measure = 'mse',alpha=0,family='gaussian')
+alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test3)
+mean((y_test3-alpha0.predicted)^2)
+#=======================================Lasso Regression for cancelled hotel=======================================
+alpha1.fit <- cv.glmnet(x_train3,y_train3,type.measure = 'mse',alpha=1,family='gaussian')
+alpha1.predicted<-predict(alpha1.fit,s=alpha1.fit$lambda.1se,newx=x_test3)
+mean((y_test3-alpha1.predicted)^2)
 
