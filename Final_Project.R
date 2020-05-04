@@ -26,6 +26,8 @@ dim(hotels)
 #Summary of the hotel data set
 summary(hotels)
 
+H=hotels
+dim(hotels)
 #Dropping the agent column
 #hotels <-hotels[ ,-c(24)]
 is.na(hotels$agent)
@@ -383,9 +385,9 @@ hoslem.test(model$y, model$fitted)
 #---------------------------------------------Splitting the training and testing dataset ------------------------------------------------
 head(hotels)
 #drop company
-hotels=hotels[-24]
+#hotels=hotels[-24]
 #drop country
-hotels=hotels[-14]
+#hotels=hotels[-14]
 hotels$reservation_status_date <- NULL
 
 dim(hotels)
@@ -610,7 +612,7 @@ glimpse(extended_hotels)
 
 
 
-#------------------------Running Different Models---------------------------------------------
+#------------------------Running Different Models for selecting features---------------------------------------------
 
 
 #For ridge and lasso regression, we will be using the `glmnet` library.  
@@ -643,6 +645,11 @@ cv_en = cv.glmnet(x, y, alpha = 0.5)
 bestlam = cv_en$lambda.min
 predict(cv_en, type="coefficients", s=bestlam)
 
+
+
+#=================================================================================================================
+
+
 #=======================================Ridge Regression for cancelled hotel=======================================
 alpha0.fit <- cv.glmnet(x_train,y_train,type.measure = 'mse',alpha=0,family='gaussian')
 alpha0.predicted<-predict(alpha0.fit,s=alpha0.fit$lambda.1se,newx=x_test)
@@ -666,6 +673,7 @@ x_test1=model.matrix(testSet$is_canceled~hotel + lead_time + arrival_date_month 
                        reserved_room_type + adr + days_in_waiting_list + customer_type +
                        total_of_special_requests, testSet)[,-1]
 y_test1=testSet$is_canceled
+
 
 #=======================================Ridge Regression for cancelled hotel=======================================
 alpha0.fit <- cv.glmnet(x_train1,y_train1,type.measure = 'mse',alpha=0,family='gaussian')
@@ -791,7 +799,7 @@ table(pred=lasso_predict,true=testSet$is_canceled)
 mean(lasso_predict==testSet$is_canceled)
 
 
-#=====================================Regression with Lasso and Ridge with accuracy===============================================================================
+#=====================================Regression with Lasso and Ridge with accuracy with 80% accuracy===============================================================================
 x_train1 = model.matrix(trainSet$is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
                           market_segment + is_repeated_guest + adults + babies +
                           previous_cancellations +
@@ -850,6 +858,260 @@ ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
 
 mean(ridge_predict==testSet$is_canceled)
 
+#===========================Regression with Lasso and Ridge Regression with positive coefficient and without reservation status 76% ===========================================
+x_train1 = model.matrix(trainSet$is_canceled~lead_time + arrival_date_year + arrival_date_month + arrival_date_week_number+
+                          arrival_date_day_of_month + stays_in_weekend_nights + stays_in_week_nights+
+                          adults + children + babies + meal + distribution_channel+is_repeated_guest +
+                          previous_cancellations + reserved_room_type + assigned_room_type+
+                          deposit_type + customer_type + adr , trainSet)[,-1]
+y_train1 = trainSet$is_canceled
+x_test1=model.matrix(testSet$is_canceled~lead_time + arrival_date_year + arrival_date_month + arrival_date_week_number+
+                       arrival_date_day_of_month + stays_in_weekend_nights + stays_in_week_nights+
+                       adults + children + babies + meal + distribution_channel+is_repeated_guest +
+                       previous_cancellations + reserved_room_type + assigned_room_type+
+                       deposit_type + customer_type + adr , testSet)[,-1]
+y_test1=testSet$is_canceled
+#-------------------------Lasso Regression-----------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=1,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
 
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(testSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==testSet$is_canceled)
+
+#---------------------Ridge regression-----------------------------------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=0,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==testSet$is_canceled)
+
+#============================================Regression to test where we get 80.2===============================
+x_train1 = model.matrix(trainSet$is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
+                          market_segment + is_repeated_guest + adults + babies +
+                          previous_cancellations +
+                          deposit_type + booking_changes  +
+                          reserved_room_type + adr + days_in_waiting_list + customer_type +
+                          total_of_special_requests, trainSet)[,-1]
+y_train1 = trainSet$is_canceled
+x_test1=model.matrix(testSet$is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
+                       market_segment + is_repeated_guest + adults + babies +
+                       previous_cancellations +
+                       deposit_type + booking_changes  +
+                       reserved_room_type + adr + days_in_waiting_list + customer_type +
+                       total_of_special_requests , testSet)[,-1]
+y_test1=testSet$is_canceled
+#-------------------------Lasso Regression-----------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=1,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(testSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==testSet$is_canceled)
+
+#---------------------Ridge regression-----------------------------------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=0,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==testSet$is_canceled)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#============================================Regression to test Prediction 80.3% Best now==============================
+x_train1 = model.matrix(trainSet$is_canceled~lead_time + country + deposit_type + adr + arrival_date_day_of_month +
+                          total_of_special_requests  + stays_in_weekend_nights + previous_cancellations+
+                          arrival_date_year+ booking_changes + required_car_parking_spaces +
+                          market_segment, trainSet)[,-1]
+y_train1 = trainSet$is_canceled
+x_test1=model.matrix(testSet$is_canceled~lead_time + country + deposit_type + adr + arrival_date_day_of_month +
+                       total_of_special_requests  + stays_in_weekend_nights + previous_cancellations+
+                       arrival_date_year+ booking_changes + required_car_parking_spaces +
+                       market_segment , testSet)[,-1]
+y_test1=testSet$is_canceled
+#-------------------------Lasso Regression-----------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=1,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+#-----------------------Leave one out cross validation---------------------------------
+library(caret)
+trainSet$is_canceled = as.factor(trainSet$is_canceled)
+train(is_canceled~ lead_time + country + deposit_type + adr + arrival_date_day_of_month +
+        total_of_special_requests  + stays_in_weekend_nights + previous_cancellations+
+        arrival_date_year+ booking_changes + required_car_parking_spaces +
+        market_segment, method = "glm", data = trainSet, trControl = trainControl(method = "LOOCV"))
+
+
+#get test data
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(testSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==testSet$is_canceled)
+
+#---------------------Ridge regression-----------------------------------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=0,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==testSet$is_canceled)
+
+
+
+
+
+
+
+#============================Regression to test Prediction same above but included stays_in_week_nights the best prediction 80.57%==============================
+x_train1 = model.matrix(trainSet$is_canceled~lead_time + country + deposit_type + adr + arrival_date_day_of_month +
+                          total_of_special_requests  + stays_in_weekend_nights +stays_in_week_nights + previous_cancellations+
+                          arrival_date_year+ booking_changes + required_car_parking_spaces +
+                          market_segment, trainSet)[,-1]
+y_train1 = trainSet$is_canceled
+x_test1=model.matrix(testSet$is_canceled~lead_time + country + deposit_type + adr + arrival_date_day_of_month +
+                       total_of_special_requests  + stays_in_weekend_nights + stays_in_week_nights +previous_cancellations+
+                       arrival_date_year+ booking_changes + required_car_parking_spaces +
+                       market_segment , testSet)[,-1]
+y_test1=testSet$is_canceled
+#-------------------------Lasso Regression-----------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=1,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(testSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==testSet$is_canceled)
+
+#---------------------Ridge regression-----------------------------------------------
+cv.out <- cv.glmnet(x_train1,y_train1,alpha=0,family="binomial",type.measure = "mse" )
+#plot result
+plot(cv.out)
+
+#min value of lambda
+lambda_min <- cv.out$lambda.min
+#best value of lambda
+lambda_1se <- cv.out$lambda.1se
+#regression coefficients
+coef(cv.out,s=lambda_1se)
+
+#get test data
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==testSet$is_canceled)
+
+
+
+summary(cv.out)
 
 
