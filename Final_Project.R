@@ -454,7 +454,7 @@ library(car)
 vif(model1)
 AIC(model1)
 BIC(model1)
-plot(model1)
+#plot(model1)
 
 #residualPlots(model1)
 durbinWatsonTest(model1)
@@ -567,32 +567,7 @@ auc
 
 
 
-#============================================Neural Network ============================================================
-library(caret)
-set.seed(0)
-fit.nn <- train(is_canceled~. , data=trainSet, method="nnet",metric=metric, trControl=control)
 
-require(neuralnet)
-m <- model.matrix( 
-  ~ is_canceled+hotel + lead_time + arrival_date_month + children  + is_repeated_guest + adults + babies +
-    previous_cancellations +
-    deposit_type + booking_changes  +
-    reserved_room_type + adr + days_in_waiting_list + customer_type +
-    total_of_special_requests,data=hotels
-)
-head(m)
-
-
-# fit neural network
-
-
-nn=neuralnet(is_canceled~hotel + lead_time + arrival_date_month +arrival_date_year+ children +meal+
-               market_segment + is_repeated_guest + adults + babies +
-               previous_cancellations +
-               deposit_type + booking_changes  +
-               reserved_room_type + adr + days_in_waiting_list + customer_type +
-               total_of_special_requests,data=m, hidden=1,act.fct = "logistic",
-             linear.output = FALSE)
 
 
 
@@ -625,11 +600,69 @@ cv_ridge = cv.glmnet(x_train, y_train, alpha = 0)
 cv_ridge$lambda.min
 #We see that the cross-validated model with a $\lambda = 0.048 provides the optimal model in terms of minimizing MSE
 predict(cv_ridge, type="coefficients", s=0.04829162)
+dim(hotels)
+#min value of lambda
+lambda_min <- cv_ridge$lambda.min
+#best value of lambda
+lambda_1se <- cv_ridge$lambda.1se
+#regression coefficients
+coef(cv_ridge,s=lambda_1se)
+
+#Predicting on training data 100% with 30 features
+#predict class, type=”class”
+ridge_prob <- predict(cv_ridge,newx = x_train,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(trainSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==trainSet$is_canceled)
+
+#Testing on test data 100 % with 30 features
+ridge_prob <- predict(cv_ridge,newx = x_test,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==testSet$is_canceled)
+
+
 
 #Lasso
 cv_lasso = cv.glmnet(x_train, y_train, alpha = 1)
 bestlam = cv_ridge$lambda.min
 predict(cv_lasso, type="coefficients", s=bestlam)
+
+#min value of lambda
+lambda_min <- cv_lasso$lambda.min
+#best value of lambda
+lambda_1se <- cv_lasso$lambda.1se
+#regression coefficients
+coef(cv_lasso,s=lambda_1se)
+
+
+#Predicting on training data 100% with 30 features
+#predict class, type=”class”
+lasso_prob <- predict(cv_lasso,newx = x_train,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(trainSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==trainSet$is_canceled)
+
+#Testing on test data 63.08 %
+lasso_prob <- predict(cv_lasso,newx = x_test,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(testSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==testSet$is_canceled)
+
+
+
 
 
 
@@ -677,7 +710,7 @@ mean((y_test1-alpha1.predicted)^2)
 #==============================================Regression of Lasso and Ridge to calculate accuracy=====================
 
 
-#===========================Regression with Lasso and Ridge Regression with positive coefficient and without reservation status 76% ===========================================
+#===========================Regression with Lasso and Ridge Regression with positive coefficient and without reservation status 76.87% ===========================================
 x_train1 = model.matrix(trainSet$is_canceled~lead_time + arrival_date_year + arrival_date_month + arrival_date_week_number+
                           arrival_date_day_of_month + stays_in_weekend_nights + stays_in_week_nights+
                           adults + children + babies + meal + distribution_channel+is_repeated_guest +
@@ -702,6 +735,16 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
+#Predict on training data set 76.71% accuracy
+lasso_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(trainSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==trainSet$is_canceled)
+
+#Predicting of testing or new data set
 #get test data
 #predict class, type=”class”
 lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
@@ -747,7 +790,19 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
-#get test data
+#Predicting on training data 75.81 %
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(trainSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==trainSet$is_canceled)
+
+
+
+#Predicting on testing data
 #predict class, type=”class”
 ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
 #translate probabilities to predictions
@@ -805,8 +860,18 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
+#Predicting on training data 80.07%
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(trainSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
 
-#get test data
+mean(lasso_predict==trainSet$is_canceled)
+
+
+#Predicting on testing data set
 #predict class, type=”class”
 lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
 #translate probabilities to predictions
@@ -828,7 +893,18 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
-#get test data
+#Predicting on training data set 79.73%
+#predict class, type=”class”
+ridge_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(trainSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==trainSet$is_canceled)
+
+
+#Predicting on testing data set
 #predict class, type=”class”
 ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
 #translate probabilities to predictions
@@ -863,7 +939,20 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
-#get test data
+#Predicting on training data set 80.17 %
+#predict class, type=”class”
+lasso_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+lasso_predict <- rep("non_cancelled",nrow(trainSet))
+lasso_predict[lasso_prob>.5] <- "canceled"
+lasso_predict <- ifelse(lasso_predict=="canceled",1,0)
+
+mean(lasso_predict==trainSet$is_canceled)
+
+#Cross Validation on Training data
+
+
+#Predicting on testing data set
 #predict class, type=”class”
 lasso_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
 #translate probabilities to predictions
@@ -910,6 +999,28 @@ lambda_1se <- cv.out$lambda.1se
 #regression coefficients
 coef(cv.out,s=lambda_1se)
 
+#Predicting on training dataset 79.81%
+ridge_prob <- predict(cv.out,newx = x_train1,s=lambda_1se,type="response")
+#translate probabilities to predictions
+ridge_predict <- rep("non_cancelled",nrow(trainSet))
+ridge_predict[ridge_prob>.5] <- "canceled"
+ridge_predict <- ifelse(ridge_predict=="canceled",1,0)
+
+mean(ridge_predict==trainSet$is_canceled)
+
+#Cross Validation (K Fold) on Training data
+# Prepare data set 
+
+
+library(glmnet)
+
+# Run cross-validation
+mod_cv <- cv.glmnet(x=x_train1, y=y_train1, family='binomial')
+
+mod_cv$lambda.1se
+
+coef(mod_cv, mod_cv$lambda.1se)
+
 #get test data
 #predict class, type=”class”
 ridge_prob <- predict(cv.out,newx = x_test1,s=lambda_1se,type="response")
@@ -947,5 +1058,4 @@ auc <- performance(pred1,"auc")
 auc <- unlist(slot(auc,"y.values"))
 auc
 
-
-
+#==========================================================================================================================================
