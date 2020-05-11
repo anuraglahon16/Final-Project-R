@@ -32,10 +32,14 @@ Missing Data
   
 # 6. MODEL BUILDING :
 
-[MODEL BUILDING - FOR BOOKING CANCELLATIONS](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Booking%20cancellations.R)  
-[MODEL BUILDING - FOR SPECIAL REQUESTS ](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Special%20request.R)
+MODEL BUILDING - FOR BOOKING CANCELLATIONS:
+[R file for booking cancellations](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Booking%20cancellations.R)  
+
+MODEL BUILDING - FOR SPECIAL REQUESTS :
+[R file for special requests](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Special%20request.R)
 
 # 7. TIME SERIES ANALYSIS FOR BOOKINGS: 
+[Time Series R file](https://github.com/anuraglahon16/Final-Project-R/blob/master/TimeSeriesAnalysis.R)
 # 8. CONCLUSIONS :
 
 • Booking cancellation model will help to Identify the likelihood of bookings being cancelled and makes it possible for hotel managers to take measures to avoid these potential cancellations, such as offering services, discounts, or other perks.  
