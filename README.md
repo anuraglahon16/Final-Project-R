@@ -1,6 +1,5 @@
 # Final Project R
-![](https://github.com/anuraglahon16/Final-Project-R/blob/master/images/download.png)
- 
+![](https://github.com/anuraglahon16/Final-Project-R/blob/master/images/download.png) ![](https://github.com/anuraglahon16/Final-Project-R/blob/master/images/Green%20Modern%20Campus%20Building%20School%20Brochure.jpg)
  # 1.	Project Overview:
  
 In this project, we will try to predict the possibility of a booking cancellations for a hotel based on different factors and also try to predict if there is a likelihood of getting a special requests from customers based on different factors. The data set contains booking information for a city hotel and a resort hotel, and includes information such as when the booking was made, the number of adults, children, and/or babies, and the number of available parking spaces, among other things. From this, we can understand the customer’s behavior and it might help us to take better decisions.  
