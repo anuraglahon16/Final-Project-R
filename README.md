@@ -39,6 +39,7 @@ MODEL BUILDING - FOR SPECIAL REQUESTS :
 [R file for special requests](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Special%20request.R)
 
 # 7. TIME SERIES ANALYSIS FOR BOOKINGS: 
+TIME SERIES ANALYSIS USING FORECASTS MODEL and MODEL USING HOLTWINTERS
 [Time Series R file](https://github.com/anuraglahon16/Final-Project-R/blob/master/TimeSeriesAnalysis.R)
 # 8. CONCLUSIONS :
 
