@@ -32,7 +32,7 @@ Missing Data
   
 # 6. MODEL BUILDING :
 
-MODEL BUILDING - FOR BOOKING CANCELLATIONS  
+[MODEL BUILDING - FOR BOOKING CANCELLATIONS](https://github.com/anuraglahon16/Final-Project-R/blob/master/Model%20Building%20for%20Booking%20cancellations.R)  
 MODEL BUILDING - FOR SPECIAL REQUESTS 
 
 # 7. TIME SERIES ANALYSIS FOR BOOKINGS: 
