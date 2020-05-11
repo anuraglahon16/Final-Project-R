@@ -14,6 +14,7 @@ Our goal is to predict what type of customers need special request and to predic
 # 2.Data Source :
 
 Data was collected from the Kaggle website. The data is originally from the article Hotel Booking Demand Datasets, written by Nuno Antonio, Ana Almeida, and Luis Nunes for Data in Brief, Volume 22, February 2019. This data set contains booking information for a city hotel and a resort hotel, and includes information such as when the booking was made, length of stay, the number of adults, children, and/or babies, and the number of available parking spaces, among other things
+![](https://github.com/anuraglahon16/Final-Project-R/blob/master/images/download%20(1).png)
 [Hotel booking data set](https://github.com/anuraglahon16/Final-Project-R/blob/master/hotel_bookings.csv)
  
 # 3.	Business Understanding:
